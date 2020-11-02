@@ -419,8 +419,9 @@ class LQR(smach.State):
         rospy.wait_for_service('joint_cmd')
         self.send = rospy.ServiceProxy('joint_cmd', DesiredJointsCmd)
         self._model = model
-        self.rate = rospy.Rate(100)
-        file = "/home/jack/test.npy"
+        self.rate = rospy.Rate(10)
+        file = "/home/nathanielgoldfarb/catkin_ws/src/ambf_walker/config/tau.npy"
+        self.runner = self._model.get_walker()
         with open(file, 'rb') as f:
             self.us2 = np.load(f)
         self.pub = rospy.Publisher("set_points", DesiredJoints, queue_size=1)
@@ -428,12 +429,15 @@ class LQR(smach.State):
 
     def execute(self, userdata):
 
-        if self.count < 176:
-            q = np.array(7*[0.0])
-            qd = np.array(7*[0.0])
-            qdd = np.append(self.us2[self.count], [0.0])
-            self.send(q, qd, qdd, "LQR", [self.count])
-            ### self.pub.publish(q)  changed!!!!!!
+        if self.count < self.runner.get_length():
+            self.runner.step()
+            x = self.runner.x
+            dx = self.runner.dx
+            ddx = self.us2[self.count]
+            q = np.append(x, [0.0])
+            qd = np.append(dx, [0.0])
+            qdd = np.append(ddx, [0.0])
+            self.send(q, qd, qdd, "FF", [self.count])
             self.rate.sleep()
             self.count += 1
             return "LQRing"
@@ -447,7 +451,7 @@ class Temp(smach.State):
         smach.State.__init__(self, outcomes=outcomes)
         rospy.wait_for_service('joint_cmd')
         self.send = rospy.ServiceProxy('joint_cmd', DesiredJointsCmd)
-        self.runner = TPGMMRunner.TPGMMRunner("/home/jack/catkin_ws/src/ambf_walker/Train/gotozero.pickle")
+        self.runner = TPGMMRunner.TPGMMRunner("/home/nathanielgoldfarb/catkin_ws/src/ambf_walker/Train/gotozero.pickle")
         self._model = model
         self.runner = model.get_runner()
         self.rate = rospy.Rate(1000)
@@ -524,8 +528,8 @@ class StairDMP(smach.State):
         rospy.wait_for_service('joint_cmd')
         self.send = rospy.ServiceProxy('joint_cmd', DesiredJointsCmd)
         self._model = model
-        self.runnerZ = GMMRunner.GMMRunner("/home/jack/catkin_ws/src/ambf_walker/Train/gotozero.pickle")  # make_toeZ([file1, file2], hills3, nb_states, "toe_IK")  changed!!!!!
-        self.runnerY = GMMRunner.GMMRunner("/home/jack/catkin_ws/src/ambf_walker/Train/gotozero.pickle")  # make_toeY([file1, file2], hills3, nb_states, "toe_IK")  changed!!!!!
+        self.runnerZ = GMMRunner.GMMRunner("/home/nathanielgoldfarb/catkin_ws/src/ambf_walker/Train/gotozero.pickle")  # make_toeZ([file1, file2], hills3, nb_states, "toe_IK")  changed!!!!!
+        self.runnerY = GMMRunner.GMMRunner("/home/nathanielgoldfarb/catkin_ws/src/ambf_walker/Train/gotozero.pickle")  # make_toeY([file1, file2], hills3, nb_states, "toe_IK")  changed!!!!!
         self.rate = rospy.Rate(10)
         self.msg = DesiredJoints()
         self.pub = rospy.Publisher("set_points", DesiredJoints, queue_size=1)
