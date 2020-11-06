@@ -12,7 +12,7 @@ from Controller import ControllerNode
 from Model import Exoskeleton
 import rospy
 from ambf_client import Client
-from Controller import DynController, MPCController, FeedForwardController ,LQRController
+from Controller import DynController, MPCController, FeedForwardController, LQRController
 
 
 ####### Dynamcis Controller #######
